@@ -26,7 +26,8 @@ class ModifiedTrainer(Trainer):
         input_shape = inputs["input_ids"].shape
         return model(
             input_ids=inputs["input_ids"],
-            attention_mask=torch.ones(1, 1, input_shape[-1], input_shape[-1]).bool(),
+            attention_mask=torch.ones(
+                1, 1, input_shape[-1], input_shape[-1]).bool(),
             labels=inputs["input_ids"],
         ).loss
 
@@ -35,7 +36,7 @@ def data_collator(features: list) -> dict:
     len_ids = [len(feature['input_ids']) for feature in features]
     longest = max(len_ids)
     input_ids = []
-    for ids_l, feature in sorted(zip(len_ids, features), key=lambda x:-x[0]):
+    for ids_l, feature in sorted(zip(len_ids, features), key=lambda x: -x[0]):
         ids = feature['input_ids']
         _ids = torch.LongTensor(ids + [150004] * (longest - ids_l))
         input_ids.append(_ids)
@@ -52,18 +53,21 @@ def save_tunable_parameters(model, path):
 
 
 def main():
+    model_dir = "/opt/models/chatglm-6b"
+
     finetune_args, training_args = HfArgumentParser(
         (FinetuneArguments, TrainingArguments)).parse_args_into_dataclasses()
 
     # init model
     model = ChatGLMForConditionalGeneration.from_pretrained(
-        "THUDM/chatglm-6b", load_in_8bit=True, trust_remote_code=True, device_map='auto')
+        model_dir, load_in_8bit=True, trust_remote_code=True, device_map='auto')
     model.gradient_checkpointing_enable()
     model.enable_input_require_grads()
     model.is_parallelizable = True
     model.model_parallel = True
     model.lm_head = CastOutputToFloat(model.lm_head)
-    model.config.use_cache = False  # silence the warnings. Please re-enable for inference!
+    # silence the warnings. Please re-enable for inference!
+    model.config.use_cache = False
 
     # setup peft
     peft_config = LoraConfig(
@@ -78,6 +82,8 @@ def main():
     # load dataset
     dataset = datasets.load_from_disk(finetune_args.dataset_path)
 
+    print(dataset)
+
     # start train
     trainer = ModifiedTrainer(
         model=model,
@@ -88,8 +94,8 @@ def main():
     trainer.train()
 
     # save model
-    save_tunable_parameters(model, os.path.join(training_args.output_dir, "chatglm-lora.pt"))
-
+    save_tunable_parameters(model, os.path.join(
+        training_args.output_dir, "chatglm-lora.pt"))
 
 
 if __name__ == "__main__":

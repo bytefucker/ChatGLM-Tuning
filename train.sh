@@ -1,6 +1,8 @@
 #! /usr/bin/env bash
 
-python finetune.py \
+set -e
+
+nohup python -u finetune.py \
     --dataset_path data/alpaca \
     --lora_rank 8 \
     --per_device_train_batch_size 2 \
@@ -11,4 +13,4 @@ python finetune.py \
     --learning_rate 2e-5 \
     --fp16 \
     --logging_steps 50 \
-    --output_dir output
+    --output_dir output &

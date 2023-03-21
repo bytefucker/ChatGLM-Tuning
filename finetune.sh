@@ -13,4 +13,6 @@ nohup python -u finetune.py \
     --learning_rate 2e-5 \
     --fp16 \
     --logging_steps 50 \
-    --output_dir output &
+    --output_dir output > logs/finetune.log 2>&1 &
+
+tail -f logs/finetune.log

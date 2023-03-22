@@ -82,8 +82,6 @@ def main():
     # load dataset
     dataset = datasets.load_from_disk(finetune_args.dataset_path)
 
-    print(dataset)
-
     # start train
     trainer = ModifiedTrainer(
         model=model,
